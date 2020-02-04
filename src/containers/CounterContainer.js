@@ -1,6 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import Counter from "../components/Counter";
+import { increase, decrease } from "../modules/counter";
 
 const CounterContainer = ({ number, increase, decrease }) => {
   return (
@@ -12,4 +13,9 @@ const mapStateToProps = state => ({
   number: state.counter.number
 });
 
-export default CounterContainer;
+const mapDispatchToProps = {
+  increase,
+  decrease
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(CounterContainer);
