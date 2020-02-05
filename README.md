@@ -1,68 +1,176 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# React-Redux-Tutorial
 
-## Available Scripts
+리액트에 리덕스 적용시켜보고 정리한 내용입니다.
 
-In the project directory, you can run:
+## 구조 만들기
 
-### `yarn start`
+ducks구조는 modules를 만들고 각각의 리두서를 만들고, modules/index.js에서 합치는 구조입니다. 해당 튜토리얼에는 counter와 todos의 리듀서가 있고, index.js에서 combineReducers를 통해서 합쳐집니다.
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## 액션 정의하기
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+```js
+const INCREASE = "counter/INCREASE";
+```
 
-### `yarn test`
+해당 형태로 액션을 정의할 수 있습니다.  
+"리듀서이름/액션"형태로 정의하면 액션이 중복되더라도 상관없이 작성할 수 있습니다.
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 액션 생성 함수
 
-### `yarn build`
+액션 생성 함수는 액션에 대해서 리턴해야할 객체를 만들어주는 함수입니다.
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```js
+export const increase = () => ({ type: INCREASE });
+```
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+위와같이 정의할 수 있습니다.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+만약에 매개변수가 필요하다면 아래와 같이 정의하면 됩니다.
 
-### `yarn eject`
+```js
+export const changeInput = input => ({
+  type: CHANGE_INPUT,
+  input
+});
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## createAction으로 액션 생성 함수 만들기
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```js
+import { createAction } from "redux-actions";
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+//매개변수가 없을때
+export const increase = createAction(INCREASE);
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+//매개변수가 필요할 때
+export const changeInput = createAction(CHANGE_INPUT, input => input);
+```
 
-## Learn More
+위와 같이 createAction을 통해서 쉽게 액션생성함수를 만들 수 있습니다.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 초기 state 정의하기
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```js
+const initialState = {
+  number: 0
+};
+```
 
-### Code Splitting
+액션과 액션 생성 함수를 만들었으면 초기의 state를 정의하고 리듀서에 전달해줍니다.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+## 기본적인 리듀서의 형태
 
-### Analyzing the Bundle Size
+```js
+function counter(state = initialState, action) {
+  switch (action.type) {
+    case INCREASE:
+      return {
+        number: state.number + 1
+      };
+    default:
+      return state;
+  }
+}
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+위와 같이 switch문을 통해서 action의 타입을 비교해 state를 바꿔줍니다.
 
-### Making a Progressive Web App
+## handleActions를 이용한다면?
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+```js
+import { handleActions } from "redux-actions";
 
-### Advanced Configuration
+const counter = handleActions(
+  {
+    [INCREASE]: (state, action) => ({ number: state.number + 1 })
+  },
+  initialState
+);
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+handleActions를 이용하면 type말고 다른 값은 payload라는 객체를 통해서 받아옵니다. 그래서 값을 활용하실땐 payload 객체를 이용하셔야 합니다.
 
-### Deployment
+## combineReducers를 이용해 리듀서 합치기
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+```js
+// modules/index.js
 
-### `yarn build` fails to minify
+import { combineReducers } from "redux";
+import counter from "./counter";
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+const rootReducer = combineReducers({
+  counter,
+  다른리듀서들
+});
+```
+
+위와 같이 리듀서를 합치면 rootReducer가 state가 됩니다. 즉 state.counter를 통해서 counter의 값에 접근할 수 있습니다.
+
+## 프로젝트에 리덕스 연결시키기
+
+```js
+// index.js
+import { createStore } from "redux";
+import { Provider } from "react-redux";
+
+const store = createStore(rootReducer);
+
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById("root")
+);
+```
+
+createStore에 리듀서를 전달하면 store가 생성됩니다. 해당 store를 Provider에 전달하고 App 컴포넌트를 감싸주면 됩니다.
+
+## 컴포넌트에서 사용하기
+
+```js
+// 컴포넌트와 리덕스를 연결할 connect 불러오기
+import { connect } from "react-redux";
+//액션 생성함수 불러오기
+import { increase } from "../modules/counter";
+
+const CounterContainer = ({ number, increase }) => {
+  return <Counter number={number} onIncrease={increase} />;
+};
+
+// state를 props에 맵핑 시킴
+const mapStateToProps = state => ({
+  number: state.counter.number
+});
+
+// dispatch를 props에 맵핑 시킴
+const mapDispatchToProps = dispatch => ({
+  increase: () => dispatch(increase())
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(CounterContainer);
+```
+
+connect함수에 mapStateToProps와 mapDispatchToProps을 전달해서 리턴되는 함수에 컴포넌트를 인자로 넣은 형태가 되면 컴포넌트에서 사용이 가능하다.
+
+## useSelector, useDispatch, useCallback, React.memo를 통해서 구현하기
+
+```js
+import React, { useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { increase } from "../modules/counter";
+
+const CounterContainer = () => {
+  const number = useSelector(state => state.counter.number);
+  const dispatch = useDispatch();
+  const onIncrease = useCallback(() => dispatch(increase()), [dispatch]);
+  return <Counter number={number} onIncrease={onIncrease} />;
+};
+
+export default React.memo(CounterContainer);
+```
+
+useSelector 훅은 state를 불러오고, useDispatch 훅은 디스패치를 불러옵니다. export 할땐 React.memo에 감싸주면 됩니다.
+
+## connect의 장점
+
+connect를 사용해서 만들었을 땐 해당 컴포넌트의 부모 컴포넌트가 리렌더링 될 때, 해당 컨테이너의 props가 바뀌지 않았다면 리렌더링이 자동으로 방지 됩니다. 위에 훅들을 이용해서 만들었을 땐 React.memo를 통해서 방지했습니다.
